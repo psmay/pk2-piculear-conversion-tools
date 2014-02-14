@@ -18,6 +18,8 @@
  *  - size of script comment sometimes exceeds the limit of 128 characters
  *    as specified in (DeviceFile.h)
  * 
+ * pk2dft-jsonhack.c
+ *	Modified 2013 by Peter S. May with a hack to allow JSON-like output
  */
 
 #include <stdio.h>
@@ -26,6 +28,8 @@
 #include <stdbool.h>
 #include <string.h>
 #include <malloc.h>
+
+#include <ctype.h>
 
 #include <confuse.h>
 
@@ -598,11 +602,42 @@ char *valid_string(char *in, char *out)
 	pc  = in;
 	pc2 = out;
 	while (*pc != 0) {
-		if (*pc == '\"') {
+		switch(*pc) {
+			default:
+				if(isgraph(*pc)) {
+					*pc2++ = *pc;
+				}
+				else {
+					*pc2++ = '\\';
+					*pc2++ = 'u';
+					*pc2++ = '0';
+					*pc2++ = '0';
+					*pc2++ = ((*pc >> 4) & 0xF) + '0';
+					*pc2++ = (*pc & 0xF) + '0';
+				}
+				break;
+			case ' ':
+				*pc2++ = ' ';
+				break;
+			case '\\':
+			case '"':
+			case '\b':
+			case '\f':
+			case '\n':
+			case '\r':
+			case '\t':
 				*pc2++ = '\\';
-				*pc2++ = '\"';
+				switch(*pc) {
+					default: *pc2++ = *pc; break;
+					case '\b': *pc2++ = 'b'; break;
+					case '\f': *pc2++ = 'f'; break;
+					case '\n': *pc2++ = 'n'; break;
+					case '\r': *pc2++ = 'r'; break;
+					case '\t': *pc2++ = 't'; break;
+				}
+				break;
 		}
-		else *pc2++ = *pc;
+
 		pc++;
 	}
 	*pc2 = 0;
@@ -758,22 +793,26 @@ void print_script(FILE *f, script_ent_t *script)
 {
 	int i;
 	uint8_t *ptr;
-	
-	fprintf(f, "name          = \"%s\"\n", valid_string(script->name, g_tmp));
+	char pre = ' ';
+
+	fprintf(f, "{\n");
+	fprintf(f, "\"name\"          : \"%s\",\n", valid_string(script->name, g_tmp));
 	if (strlen(script->org_name) > 0)
-		fprintf(f, "org_name      = \"%s\"\n", valid_string(script->org_name, g_tmp));
-	fprintf(f, "id            = %d\n", script->script_num);
-	fprintf(f, "version       = %d\n", script->version);
-	fprintf(f, "unused1       = %d\n", script->unused1);
-//	fprintf(f, "script_length    = %d\n", script->script_length);
-	fprintf(f, "script        = {");
+		fprintf(f, "\"org_name\"      : \"%s\",\n", valid_string(script->org_name, g_tmp));
+	fprintf(f, "\"id\"            : %d,\n", script->script_num);
+	fprintf(f, "\"version\"       : %d,\n", script->version);
+	fprintf(f, "\"unused1\"       : %d,\n", script->unused1);
+//	fprintf(f, "\"script_length\"    : %d\n", script->script_length);
+	fprintf(f, "\"script\"        : [");
 	ptr = (uint8_t*)script->script;
 	for (i=0; i<(script->script_length<<1); i++) {
-		if ((i & 7) == 0) fprintf(f, "\n");
-		fprintf(f, " 0x%02x,", script->script[i]);
+		//if ((i & 7) == 0) fprintf(f, "\n");
+		fprintf(f, "%c %d", pre, script->script[i]);
+		pre = ',';
 	}
-	fprintf(f, "\n}\n");
-	fprintf(f, "comment       = \"%s\"\n", valid_string(script->comment, g_tmp));
+	fprintf(f, "\n],\n");
+	fprintf(f, "\"comment\"       : \"%s\"\n", valid_string(script->comment, g_tmp));
+	fprintf(f, "}");
 }
 
 int rd_string(FILE *f, char *str)

@@ -19,7 +19,7 @@
  *    as specified in (DeviceFile.h)
  * 
  * pk2dft-jsonhack.c
- *	Modified 2013 by Peter S. May with a hack to allow JSON-like output
+ *	Modified 2013-2014 by Peter S. May with a hack to allow JSON-like output
  */
 
 #include <stdio.h>
@@ -595,10 +595,12 @@ int parse_device(char *filename, device_ent_t *device)
 	return 0;
 }
 
+static const char * HEX_DIGITS = "0123456789abcdef";
+
 char *valid_string(char *in, char *out)
 {
 	char *pc, *pc2;
-	// mainly replace " with \"
+	// escape characters that cannot appear inline
 	pc  = in;
 	pc2 = out;
 	while (*pc != 0) {
@@ -612,8 +614,8 @@ char *valid_string(char *in, char *out)
 					*pc2++ = 'u';
 					*pc2++ = '0';
 					*pc2++ = '0';
-					*pc2++ = ((*pc >> 4) & 0xF) + '0';
-					*pc2++ = (*pc & 0xF) + '0';
+					*pc2++ = HEX_DIGITS[(*pc & 0xF0) >> 4];
+					*pc2++ = HEX_DIGITS[(*pc & 0x0F)];
 				}
 				break;
 			case ' ':
@@ -645,7 +647,7 @@ char *valid_string(char *in, char *out)
 	return out;			
 }
 
-char g_tmp[128];
+char g_tmp[0xFFFF];
 
 char *script_name(uint16_t script_id)
 {
@@ -670,123 +672,127 @@ void print_family(FILE *f, family_ent_t *devfam_par)
 {
 	char scr_name[64];
 	
-	fprintf(f, "name                = \"%s\"\n"  , devfam_par->name);
-	fprintf(f, "fam_id              = %d\n"      , devfam_par->fam_id);
-	fprintf(f, "fam_type            = %d\n"      , devfam_par->fam_type);
-	fprintf(f, "search_prio         = %d\n"      , devfam_par->search_prio);
-	fprintf(f, "prg_entry_script    = \"%s\"\n"  , script_name(devfam_par->prg_entry_script));
-	fprintf(f, "prg_exit_script     = \"%s\"\n"  , script_name(devfam_par->prg_exit_script));
-	fprintf(f, "rd_devid_script     = \"%s\"\n"  , script_name(devfam_par->rd_devid_script));
-	fprintf(f, "devid_mask          = 0x%08x\n"  , devfam_par->devid_mask);
-	fprintf(f, "blank_value         = 0x%08x\n"  , devfam_par->blank_value);
-	fprintf(f, "bytes_per_loc       = %d\n"      , devfam_par->bytes_per_loc);
-	fprintf(f, "addr_inc            = %d\n"      , devfam_par->addr_inc);
-	fprintf(f, "b_detect            = %d\n"      , devfam_par->b_detect);
-	fprintf(f, "prg_entry_vpp_script= \"%s\"\n"  , script_name(devfam_par->prg_entry_vpp_script));
-	fprintf(f, "ee_bytes_per_word   = %d\n"      , devfam_par->ee_bytes_per_word);
-	fprintf(f, "ee_addr_inc         = %d\n"      , devfam_par->ee_addr_inc);
-	fprintf(f, "user_id_hex_bytes   = %d\n"      , devfam_par->user_id_hex_bytes);
-	fprintf(f, "user_id_bytes       = %d\n"      , devfam_par->user_id_bytes);
-	fprintf(f, "prog_mem_hex_bytes  = %d\n"      , devfam_par->prog_mem_hex_bytes);
-	fprintf(f, "ee_mem_hex_bytes    = %d\n"      , devfam_par->ee_mem_hex_bytes);
-	fprintf(f, "prg_mem_shift       = %d\n"      , devfam_par->prg_mem_shift);
-	fprintf(f, "test_memory_start   = %d\n"      , devfam_par->test_memory_start);
-	fprintf(f, "test_memory_length  = %d\n"      , devfam_par->test_memory_length);
-	fprintf(f, "vpp                 = %f\n"      , devfam_par->vpp);
+	fprintf(f, "{\n");
+	fprintf(f, "\"name\" : \"%s\",\n"  , devfam_par->name);
+	fprintf(f, "\"fam_id\" : %d,\n"      , devfam_par->fam_id);
+	fprintf(f, "\"fam_type\" : %d,\n"      , devfam_par->fam_type);
+	fprintf(f, "\"search_prio\" : %d,\n"      , devfam_par->search_prio);
+	fprintf(f, "\"prg_entry_script\" : \"%s\",\n"  , script_name(devfam_par->prg_entry_script));
+	fprintf(f, "\"prg_exit_script\" : \"%s\",\n"  , script_name(devfam_par->prg_exit_script));
+	fprintf(f, "\"rd_devid_script\" : \"%s\",\n"  , script_name(devfam_par->rd_devid_script));
+	fprintf(f, "\"devid_mask\" : %d,\n"  , devfam_par->devid_mask);
+	fprintf(f, "\"blank_value\" : %d,\n"  , devfam_par->blank_value);
+	fprintf(f, "\"bytes_per_loc\" : %d,\n"      , devfam_par->bytes_per_loc);
+	fprintf(f, "\"addr_inc\" : %d,\n"      , devfam_par->addr_inc);
+	fprintf(f, "\"b_detect\" : %d,\n"      , devfam_par->b_detect);
+	fprintf(f, "\"prg_entry_vpp_script\" : \"%s\",\n"  , script_name(devfam_par->prg_entry_vpp_script));
+	fprintf(f, "\"ee_bytes_per_word\" : %d,\n"      , devfam_par->ee_bytes_per_word);
+	fprintf(f, "\"ee_addr_inc\" : %d,\n"      , devfam_par->ee_addr_inc);
+	fprintf(f, "\"user_id_hex_bytes\" : %d,\n"      , devfam_par->user_id_hex_bytes);
+	fprintf(f, "\"user_id_bytes\" : %d,\n"      , devfam_par->user_id_bytes);
+	fprintf(f, "\"prog_mem_hex_bytes\" : %d,\n"      , devfam_par->prog_mem_hex_bytes);
+	fprintf(f, "\"ee_mem_hex_bytes\" : %d,\n"      , devfam_par->ee_mem_hex_bytes);
+	fprintf(f, "\"prg_mem_shift\" : %d,\n"      , devfam_par->prg_mem_shift);
+	fprintf(f, "\"test_memory_start\" : %d,\n"      , devfam_par->test_memory_start);
+	fprintf(f, "\"test_memory_length\" : %d,\n"      , devfam_par->test_memory_length);
+	fprintf(f, "\"vpp\" : %f\n"      , devfam_par->vpp);
+	fprintf(f, "}\n");
 }
 
 void print_device(FILE *f, device_ent_t *devpart_par)
 {
 	int j;
 	
-	fprintf(f, "part_name                 = \"%s\"\n"  , devpart_par->part_name);
-	fprintf(f, "family                    = \"%s\"\n"  , family_name(devpart_par->family));
-	fprintf(f, "device_id                 = 0x%08x\n"  , devpart_par->device_id);
-	fprintf(f, "program_mem               = 0x%08x\n"  , devpart_par->program_mem);
-	fprintf(f, "ee_mem                    = 0x%04x\n"  , devpart_par->ee_mem);
-	fprintf(f, "ee_addr                   = 0x%08x\n"  , devpart_par->ee_addr);
-	fprintf(f, "config_words              = %d\n"      , devpart_par->config_words);
-	fprintf(f, "config_addr               = 0x%08x\n"  , devpart_par->config_addr);
-	fprintf(f, "user_id_words             = %d\n"      , devpart_par->user_id_words);
-	fprintf(f, "user_id_addr              = 0x%08x\n"  , devpart_par->user_id_addr);
-	fprintf(f, "bandgap_mask              = 0x%08x\n"  , devpart_par->bandgap_mask);
+	fprintf(f, "{\n");
+	fprintf(f, "\"part_name\" : \"%s\",\n"  , devpart_par->part_name);
+	fprintf(f, "\"family\" : \"%s\",\n"  , family_name(devpart_par->family));
+	fprintf(f, "\"device_id\" : %d,\n"  , devpart_par->device_id);
+	fprintf(f, "\"program_mem\" : %d,\n"  , devpart_par->program_mem);
+	fprintf(f, "\"ee_mem\" : %d,\n"  , devpart_par->ee_mem);
+	fprintf(f, "\"ee_addr\" : %d,\n"  , devpart_par->ee_addr);
+	fprintf(f, "\"config_words\" : %d,\n"      , devpart_par->config_words);
+	fprintf(f, "\"config_addr\" : %d,\n"  , devpart_par->config_addr);
+	fprintf(f, "\"user_id_words\" : %d,\n"      , devpart_par->user_id_words);
+	fprintf(f, "\"user_id_addr\" : %d,\n"  , devpart_par->user_id_addr);
+	fprintf(f, "\"bandgap_mask\" : %d,\n"  , devpart_par->bandgap_mask);
 
-	fprintf(f, "config_masks              = {");
-	for (j=0; j<7; j++) fprintf(f, "0x%04x, ", devpart_par->config_masks[j]);
-	fprintf(f, "0x%04x}\n", devpart_par->config_masks[7]);
+	fprintf(f, "\"config_masks\" : [");
+	for (j=0; j<7; j++) fprintf(f, "%d, ", devpart_par->config_masks[j]);
+	fprintf(f, "%d],\n", devpart_par->config_masks[7]);
 
-	fprintf(f, "config_blank              = {");
-	for (j=0; j<7; j++) fprintf(f, "0x%04x, ", devpart_par->config_blank[j]);
-	fprintf(f, "0x%04x}\n", devpart_par->config_blank[7]);
+	fprintf(f, "\"config_blank\" : [");
+	for (j=0; j<7; j++) fprintf(f, "%d, ", devpart_par->config_blank[j]);
+	fprintf(f, "%d],\n", devpart_par->config_blank[7]);
 
-	fprintf(f, "cp_mask                   = 0x%04x\n"  , devpart_par->cp_mask);
-	fprintf(f, "cp_config                 = 0x%04x\n"  , devpart_par->cp_config);
-	fprintf(f, "osscal_save               = %d\n"      , devpart_par->osscal_save);
-	fprintf(f, "ignore_address            = 0x%08x\n"  , devpart_par->ignore_address);
-	fprintf(f, "vdd_min                   = %f\n"      , devpart_par->vdd_min);
-	fprintf(f, "vdd_max                   = %f\n"      , devpart_par->vdd_max);
-	fprintf(f, "vdd_erase                 = %f\n"      , devpart_par->vdd_erase);
-	fprintf(f, "calibration_words         = %d\n"      , devpart_par->calibration_words);
-	fprintf(f, "chip_erase_script         = \"%s\"\n"  , script_name(devpart_par->chip_erase_script));
-	fprintf(f, "progmem_addr_set_script   = \"%s\"\n"  , script_name(devpart_par->progmem_addr_set_script));
-	fprintf(f, "progmem_addr_bytes        = %d\n"      , devpart_par->progmem_addr_bytes);
-	fprintf(f, "progmem_rd_script         = \"%s\"\n"  , script_name(devpart_par->progmem_rd_script));
-	fprintf(f, "progmem_rd_words          = %d\n"      , devpart_par->progmem_rd_words);
-	fprintf(f, "eerd_prep_script          = \"%s\"\n"  , script_name(devpart_par->eerd_prep_script));
-	fprintf(f, "eerd_script               = \"%s\"\n"  , script_name(devpart_par->eerd_script));
-	fprintf(f, "eerd_locations            = %d\n"      , devpart_par->eerd_locations);
-	fprintf(f, "user_id_rd_prep_script    = \"%s\"\n"  , script_name(devpart_par->user_id_rd_prep_script));
-	fprintf(f, "user_id_rd_script         = \"%s\"\n"  , script_name(devpart_par->user_id_rd_script));
-	fprintf(f, "config_rd_prep_script     = \"%s\"\n"  , script_name(devpart_par->config_rd_prep_script));
-	fprintf(f, "config_rd_script          = \"%s\"\n"  , script_name(devpart_par->config_rd_script));
-	fprintf(f, "progmem_wr_prep_script    = \"%s\"\n"  , script_name(devpart_par->progmem_wr_prep_script));
-	fprintf(f, "progmem_wr_script         = \"%s\"\n"  , script_name(devpart_par->progmem_wr_script));
-	fprintf(f, "progmem_wr_words          = %d\n"      , devpart_par->progmem_wr_words);
-	fprintf(f, "progmem_panel_bufs        = %d\n"      , devpart_par->progmem_panel_bufs);
-	fprintf(f, "progmem_panel_offset      = %d\n"      , devpart_par->progmem_panel_offset);
-	fprintf(f, "eewr_prep_script          = \"%s\"\n"  , script_name(devpart_par->eewr_prep_script));
-	fprintf(f, "eewr_script               = \"%s\"\n"  , script_name(devpart_par->eewr_script));
-	fprintf(f, "eewr_locations            = %d\n"      , devpart_par->eewr_locations);
-	fprintf(f, "user_id_wr_prep_script    = \"%s\"\n"  , script_name(devpart_par->user_id_wr_prep_script));
-	fprintf(f, "user_id_wr_script         = \"%s\"\n"  , script_name(devpart_par->user_id_wr_script));
-	fprintf(f, "config_wr_prep_script     = \"%s\"\n"  , script_name(devpart_par->config_wr_prep_script));
-	fprintf(f, "config_wr_script          = \"%s\"\n"  , script_name(devpart_par->config_wr_script));
-	fprintf(f, "osccal_rd_script          = \"%s\"\n"  , script_name(devpart_par->osccal_rd_script));
-	fprintf(f, "osccal_wr_script          = \"%s\"\n"  , script_name(devpart_par->osccal_wr_script));
-	fprintf(f, "dp_mask                   = 0x%04x\n"  , devpart_par->dp_mask);
-	fprintf(f, "write_cfg_on_erase        = %d\n"      , devpart_par->write_cfg_on_erase);
-	fprintf(f, "blank_check_skip_usr_ids  = %d\n"      , devpart_par->blank_check_skip_usr_ids);
-	fprintf(f, "ignore_bytes              = %d\n"      , devpart_par->ignore_bytes);
-	fprintf(f, "chip_erase_prep_script    = \"%s\"\n"  , script_name(devpart_par->chip_erase_prep_script));
-	fprintf(f, "boot_flash                = %d\n"      , devpart_par->boot_flash);
-	fprintf(f, "config9_mask              = 0x%04x\n"  , devpart_par->config9_mask);
-	fprintf(f, "config9_blank             = 0x%04x\n"  , devpart_par->config9_blank);
-	fprintf(f, "progmem_erase_script      = \"%s\"\n"  , script_name(devpart_par->progmem_erase_script));
-	fprintf(f, "eemem_erase_script        = \"%s\"\n"  , script_name(devpart_par->eemem_erase_script));
-	fprintf(f, "configmem_erase_script    = \"%s\"\n"  , script_name(devpart_par->configmem_erase_script));
-	fprintf(f, "reserved1_erase_script    = \"%s\"\n"  , script_name(devpart_par->reserved1_erase_script));
-	fprintf(f, "reserved2_erase_script    = \"%s\"\n"  , script_name(devpart_par->reserved2_erase_script));
-	fprintf(f, "test_memory_rd_script     = \"%s\"\n"  , script_name(devpart_par->test_memory_rd_script));
-	fprintf(f, "test_memory_rd_words      = %d\n"      , devpart_par->test_memory_rd_words);
-	fprintf(f, "eerow_erase_script        = \"%s\"\n"  , script_name(devpart_par->eerow_erase_script));
-	fprintf(f, "eerow_erase_words         = %d\n"      , devpart_par->eerow_erase_words);
-	fprintf(f, "export_to_mplab           = %d\n"      , devpart_par->export_to_mplab);
-	fprintf(f, "debug_halt_script         = \"%s\"\n"  , script_name(devpart_par->debug_halt_script));
-	fprintf(f, "debug_run_script          = \"%s\"\n"  , script_name(devpart_par->debug_run_script));
-	fprintf(f, "debug_status_script       = \"%s\"\n"  , script_name(devpart_par->debug_status_script));
-	fprintf(f, "debug_read_exec_ver_script= \"%s\"\n"  , script_name(devpart_par->debug_read_exec_ver_script));
-	fprintf(f, "debug_single_step_script  = \"%s\"\n"  , script_name(devpart_par->debug_single_step_script));
-	fprintf(f, "debug_bulk_wr_data_script = \"%s\"\n"  , script_name(devpart_par->debug_bulk_wr_data_script));
-	fprintf(f, "debug_bulk_rd_data_script = \"%s\"\n"  , script_name(devpart_par->debug_bulk_rd_data_script));
-	fprintf(f, "debug_write_vector_script = \"%s\"\n"  , script_name(devpart_par->debug_write_vector_script));
-	fprintf(f, "debug_read_vector_script  = \"%s\"\n"  , script_name(devpart_par->debug_read_vector_script));
-	fprintf(f, "debug_row_erase_script    = \"%s\"\n"  , script_name(devpart_par->debug_row_erase_script));
-	fprintf(f, "debug_row_erase_size      = %d\n"      , devpart_par->debug_row_erase_size);
-	fprintf(f, "debug_reserved5_script    = \"%s\"\n"  , script_name(devpart_par->debug_reserved5_script));
-	fprintf(f, "debug_reserved6_script    = \"%s\"\n"  , script_name(devpart_par->debug_reserved6_script));
-	fprintf(f, "debug_reserved7_script    = \"%s\"\n"  , script_name(devpart_par->debug_reserved7_script));
-	fprintf(f, "debug_reserved8_script    = \"%s\"\n"  , script_name(devpart_par->debug_reserved8_script));
-	fprintf(f, "lvp_script                = \"%s\"\n"  , script_name(devpart_par->lvp_script));
+	fprintf(f, "\"cp_mask\" : %d,\n"  , devpart_par->cp_mask);
+	fprintf(f, "\"cp_config\" : %d,\n"  , devpart_par->cp_config);
+	fprintf(f, "\"osscal_save\" : %d,\n"      , devpart_par->osscal_save);
+	fprintf(f, "\"ignore_address\" : %d,\n"  , devpart_par->ignore_address);
+	fprintf(f, "\"vdd_min\" : %f,\n"      , devpart_par->vdd_min);
+	fprintf(f, "\"vdd_max\" : %f,\n"      , devpart_par->vdd_max);
+	fprintf(f, "\"vdd_erase\" : %f,\n"      , devpart_par->vdd_erase);
+	fprintf(f, "\"calibration_words\" : %d,\n"      , devpart_par->calibration_words);
+	fprintf(f, "\"chip_erase_script\" : \"%s\",\n"  , script_name(devpart_par->chip_erase_script));
+	fprintf(f, "\"progmem_addr_set_script\" : \"%s\",\n"  , script_name(devpart_par->progmem_addr_set_script));
+	fprintf(f, "\"progmem_addr_bytes\" : %d,\n"      , devpart_par->progmem_addr_bytes);
+	fprintf(f, "\"progmem_rd_script\" : \"%s\",\n"  , script_name(devpart_par->progmem_rd_script));
+	fprintf(f, "\"progmem_rd_words\" : %d,\n"      , devpart_par->progmem_rd_words);
+	fprintf(f, "\"eerd_prep_script\" : \"%s\",\n"  , script_name(devpart_par->eerd_prep_script));
+	fprintf(f, "\"eerd_script\" : \"%s\",\n"  , script_name(devpart_par->eerd_script));
+	fprintf(f, "\"eerd_locations\" : %d,\n"      , devpart_par->eerd_locations);
+	fprintf(f, "\"user_id_rd_prep_script\" : \"%s\",\n"  , script_name(devpart_par->user_id_rd_prep_script));
+	fprintf(f, "\"user_id_rd_script\" : \"%s\",\n"  , script_name(devpart_par->user_id_rd_script));
+	fprintf(f, "\"config_rd_prep_script\" : \"%s\",\n"  , script_name(devpart_par->config_rd_prep_script));
+	fprintf(f, "\"config_rd_script\" : \"%s\",\n"  , script_name(devpart_par->config_rd_script));
+	fprintf(f, "\"progmem_wr_prep_script\" : \"%s\",\n"  , script_name(devpart_par->progmem_wr_prep_script));
+	fprintf(f, "\"progmem_wr_script\" : \"%s\",\n"  , script_name(devpart_par->progmem_wr_script));
+	fprintf(f, "\"progmem_wr_words\" : %d,\n"      , devpart_par->progmem_wr_words);
+	fprintf(f, "\"progmem_panel_bufs\" : %d,\n"      , devpart_par->progmem_panel_bufs);
+	fprintf(f, "\"progmem_panel_offset\" : %d,\n"      , devpart_par->progmem_panel_offset);
+	fprintf(f, "\"eewr_prep_script\" : \"%s\",\n"  , script_name(devpart_par->eewr_prep_script));
+	fprintf(f, "\"eewr_script\" : \"%s\",\n"  , script_name(devpart_par->eewr_script));
+	fprintf(f, "\"eewr_locations\" : %d,\n"      , devpart_par->eewr_locations);
+	fprintf(f, "\"user_id_wr_prep_script\" : \"%s\",\n"  , script_name(devpart_par->user_id_wr_prep_script));
+	fprintf(f, "\"user_id_wr_script\" : \"%s\",\n"  , script_name(devpart_par->user_id_wr_script));
+	fprintf(f, "\"config_wr_prep_script\" : \"%s\",\n"  , script_name(devpart_par->config_wr_prep_script));
+	fprintf(f, "\"config_wr_script\" : \"%s\",\n"  , script_name(devpart_par->config_wr_script));
+	fprintf(f, "\"osccal_rd_script\" : \"%s\",\n"  , script_name(devpart_par->osccal_rd_script));
+	fprintf(f, "\"osccal_wr_script\" : \"%s\",\n"  , script_name(devpart_par->osccal_wr_script));
+	fprintf(f, "\"dp_mask\" : %d,\n"  , devpart_par->dp_mask);
+	fprintf(f, "\"write_cfg_on_erase\" : %d,\n"      , devpart_par->write_cfg_on_erase);
+	fprintf(f, "\"blank_check_skip_usr_ids\" : %d,\n"      , devpart_par->blank_check_skip_usr_ids);
+	fprintf(f, "\"ignore_bytes\" : %d,\n"      , devpart_par->ignore_bytes);
+	fprintf(f, "\"chip_erase_prep_script\" : \"%s\",\n"  , script_name(devpart_par->chip_erase_prep_script));
+	fprintf(f, "\"boot_flash\" : %d,\n"      , devpart_par->boot_flash);
+	fprintf(f, "\"config9_mask\" : %d,\n"  , devpart_par->config9_mask);
+	fprintf(f, "\"config9_blank\" : %d,\n"  , devpart_par->config9_blank);
+	fprintf(f, "\"progmem_erase_script\" : \"%s\",\n"  , script_name(devpart_par->progmem_erase_script));
+	fprintf(f, "\"eemem_erase_script\" : \"%s\",\n"  , script_name(devpart_par->eemem_erase_script));
+	fprintf(f, "\"configmem_erase_script\" : \"%s\",\n"  , script_name(devpart_par->configmem_erase_script));
+	fprintf(f, "\"reserved1_erase_script\" : \"%s\",\n"  , script_name(devpart_par->reserved1_erase_script));
+	fprintf(f, "\"reserved2_erase_script\" : \"%s\",\n"  , script_name(devpart_par->reserved2_erase_script));
+	fprintf(f, "\"test_memory_rd_script\" : \"%s\",\n"  , script_name(devpart_par->test_memory_rd_script));
+	fprintf(f, "\"test_memory_rd_words\" : %d,\n"      , devpart_par->test_memory_rd_words);
+	fprintf(f, "\"eerow_erase_script\" : \"%s\",\n"  , script_name(devpart_par->eerow_erase_script));
+	fprintf(f, "\"eerow_erase_words\" : %d,\n"      , devpart_par->eerow_erase_words);
+	fprintf(f, "\"export_to_mplab\" : %d,\n"      , devpart_par->export_to_mplab);
+	fprintf(f, "\"debug_halt_script\" : \"%s\",\n"  , script_name(devpart_par->debug_halt_script));
+	fprintf(f, "\"debug_run_script\" : \"%s\",\n"  , script_name(devpart_par->debug_run_script));
+	fprintf(f, "\"debug_status_script\" : \"%s\",\n"  , script_name(devpart_par->debug_status_script));
+	fprintf(f, "\"debug_read_exec_ver_script\" : \"%s\",\n"  , script_name(devpart_par->debug_read_exec_ver_script));
+	fprintf(f, "\"debug_single_step_script\" : \"%s\",\n"  , script_name(devpart_par->debug_single_step_script));
+	fprintf(f, "\"debug_bulk_wr_data_script\" : \"%s\",\n"  , script_name(devpart_par->debug_bulk_wr_data_script));
+	fprintf(f, "\"debug_bulk_rd_data_script\" : \"%s\",\n"  , script_name(devpart_par->debug_bulk_rd_data_script));
+	fprintf(f, "\"debug_write_vector_script\" : \"%s\",\n"  , script_name(devpart_par->debug_write_vector_script));
+	fprintf(f, "\"debug_read_vector_script\" : \"%s\",\n"  , script_name(devpart_par->debug_read_vector_script));
+	fprintf(f, "\"debug_row_erase_script\" : \"%s\",\n"  , script_name(devpart_par->debug_row_erase_script));
+	fprintf(f, "\"debug_row_erase_size\" : %d,\n"      , devpart_par->debug_row_erase_size);
+	fprintf(f, "\"debug_reserved5_script\" : \"%s\",\n"  , script_name(devpart_par->debug_reserved5_script));
+	fprintf(f, "\"debug_reserved6_script\" : \"%s\",\n"  , script_name(devpart_par->debug_reserved6_script));
+	fprintf(f, "\"debug_reserved7_script\" : \"%s\",\n"  , script_name(devpart_par->debug_reserved7_script));
+	fprintf(f, "\"debug_reserved8_script\" : \"%s\",\n"  , script_name(devpart_par->debug_reserved8_script));
+	fprintf(f, "\"lvp_script\" : \"%s\"\n"  , script_name(devpart_par->lvp_script));
+	fprintf(f, "}\n");
 }
 
 void print_script(FILE *f, script_ent_t *script)
@@ -910,6 +916,7 @@ void special_cat(char *dest, char *src)
 int dump_device_file(char *dumpdir)
 {
 	char fname[255], fbase[255], *p;
+	char pre;
 	FILE *f, *fcfg;
 	int i;
 
@@ -923,21 +930,15 @@ int dump_device_file(char *dumpdir)
 	strcat(fname, "/config.cfg");
 	if ((fcfg = fopen(fname, "w+")) == NULL) return -1;
 	
-	fprintf(fcfg, "# this configiration file was generated automatically\n");
-	fprintf(fcfg, "# please modify it according to the rules :-)\n#\n");
-	fprintf(fcfg, "# the source file contained:\n");
-	fprintf(fcfg, "#   %d families,\n", hdr.num_families);
-	fprintf(fcfg, "#   %d devices and\n", hdr.num_devices);
-	fprintf(fcfg, "#   %d scripts.\n\n\n", hdr.num_scripts);
-	fprintf(fcfg, "# for the device file header\n");
-	fprintf(fcfg, "ver_major = %d\n", hdr.version[0]);
-	fprintf(fcfg, "ver_minor = %d\n", hdr.version[1]); 
-	fprintf(fcfg, "ver_dot   = %d\n", hdr.version[2]);
-	fprintf(fcfg, "compat    = %d\n", hdr.compat);
-	fprintf(fcfg, "unused1a  = %d\n", hdr.unused1a);
-	fprintf(fcfg, "unused1b  = %d\n", hdr.unused1b);
-	fprintf(fcfg, "unused2   = %d\n", hdr.unused2);
-	fprintf(fcfg, "notes     = \n\"%s\"\n\n\n", hdr.notes);
+	fprintf(fcfg, "{\n");
+	fprintf(fcfg, "\"ver_major\" : %d,\n", hdr.version[0]);
+	fprintf(fcfg, "\"ver_minor\" : %d,\n", hdr.version[1]); 
+	fprintf(fcfg, "\"ver_dot\" : %d,\n", hdr.version[2]);
+	fprintf(fcfg, "\"compat\" : %d,\n", hdr.compat);
+	fprintf(fcfg, "\"unused1a\" : %d,\n", hdr.unused1a);
+	fprintf(fcfg, "\"unused1b\" : %d,\n", hdr.unused1b);
+	fprintf(fcfg, "\"unused2\" : %d,\n", hdr.unused2);
+	fprintf(fcfg, "\"notes\" : \"%s\",\n", valid_string(hdr.notes, g_tmp));
 	
 	// write families
 	strcpy(fname, "mkdir ");
@@ -948,13 +949,15 @@ int dump_device_file(char *dumpdir)
 	strcpy(fbase, dumpdir);
 	strcat(fbase, "/families/");
 	p = fbase + strlen(fbase);
-	fprintf(fcfg, "# list of device family files\n");
-	fprintf(fcfg, "families  = {\n");
+	//fprintf(fcfg, "# list of device family files\n");
+	fprintf(fcfg, "\"families\" : [\n");
+	pre = ' ';
 	for (i=0; i<hdr.num_families; i++) {
 		special_cat(p, families[i].name);
 		strcat(fbase, ".fam");
 		printf("filename : \"%s\"\n", fbase);
-		fprintf(fcfg, "\t\"%s\",\n", valid_string(fbase, g_tmp));
+		fprintf(fcfg, "\t%c\"%s\"\n", pre, valid_string(fbase, g_tmp));
+		pre = ',';
 		if ((f = fopen(fbase, "w+")) == NULL) {
 			printf("error: cannot create file\n");
 			return -1;
@@ -962,7 +965,7 @@ int dump_device_file(char *dumpdir)
 		print_family(f, &families[i]);
 		fclose(f);
 	}
-	fprintf(fcfg, "}\n\n");
+	fprintf(fcfg, "],\n\n");
 
 	// write devices
 	strcpy(fname, "mkdir ");
@@ -973,13 +976,15 @@ int dump_device_file(char *dumpdir)
 	strcpy(fbase, dumpdir);
 	strcat(fbase, "/devices/");
 	p = fbase + strlen(fbase);
-	fprintf(fcfg, "# list of device files\n");
-	fprintf(fcfg, "devices   = {\n");
+	//fprintf(fcfg, "# list of device files\n");
+	fprintf(fcfg, "\"devices\" : [\n");
+	pre = ' ';
 	for (i=0; i<hdr.num_devices; i++) {
 		special_cat(p, devices[i].part_name);
 		strcat(fbase, ".dev");
 		printf("filename : \"%s\"\n", fbase);
-		fprintf(fcfg, "\t\"%s\",\n", valid_string(fbase,g_tmp));
+		fprintf(fcfg, "\t%c\"%s\"\n", pre, valid_string(fbase,g_tmp));
+		pre = ',';
 		if ((f = fopen(fbase, "w+")) == NULL) {
 			printf("error: cannot create file\n");
 			return -1;
@@ -987,7 +992,7 @@ int dump_device_file(char *dumpdir)
 		print_device(f, &devices[i]);
 		fclose(f);
 	}
-	fprintf(fcfg, "}\n\n");
+	fprintf(fcfg, "],\n\n");
 	
 	// write scripts
 	strcpy(fname, "mkdir ");
@@ -998,13 +1003,15 @@ int dump_device_file(char *dumpdir)
 	strcpy(fbase, dumpdir);
 	strcat(fbase, "/scripts/");
 	p = fbase + strlen(fbase);
-	fprintf(fcfg, "# list of script files\n");
-	fprintf(fcfg, "scripts   = {\n");
+	//fprintf(fcfg, "# list of script files\n");
+	fprintf(fcfg, "\"scripts\" : [\n");
+	pre = ' ';
 	for (i=0; i<hdr.num_scripts; i++) {
 		special_cat(p, scripts[i].name);
 		strcat(fbase, ".scr");
 		printf("filename : \"%s\"\n", fbase);
-		fprintf(fcfg, "\t\"%s\",\n", valid_string(fbase,g_tmp));
+		fprintf(fcfg, "\t%c\"%s\"\n", pre, valid_string(fbase,g_tmp));
+		pre = ',';
 		if ((f = fopen(fbase, "w+")) == NULL) {
 			printf("error: cannot create file\n");
 			return -1;
@@ -1012,6 +1019,8 @@ int dump_device_file(char *dumpdir)
 		print_script(f, &scripts[i]);
 		fclose(f);
 	}
+	fprintf(fcfg, "]");
+
 	fprintf(fcfg, "}");
 	
 	fclose(fcfg);

@@ -10,7 +10,6 @@ DUMP_PART_NAMES=families devices scripts
 DUMP_PART_DIRS=$(addprefix $(DUMP_DIR)/,$(DUMP_PART_NAMES))
 DUMP_PART_FILES=$(addprefix $(BUILD)/,$(addsuffix .json.tmp,$(DUMP_PART_NAMES)))
 DUMP=$(BUILD)/dump.json
-CORPUS=$(BUILD)/script-corpus.txt
 CATARRAY=sh ./cat-array.sh
 CATOBJECT=sh ./cat-object.sh
 UNRELAX=perl ./unrelax-json.pl
@@ -51,19 +50,8 @@ $(DUMP): $(DUMP_PART_FILES)
 
 
 #
-# Parts that should be reengineered
+# Combine and associate script bytes
 #
 
-$(CORPUS): $(DUMP_DIR) | $(BUILD)
-	find $(DUMP_DIR)/scripts -type f -name '*.scr' -print0 | \
-	xargs -0 -i -n 1 basename {} .scr | \
-	sort > $@
-
-$(CA): $(DCA) $(CORPUS) $(DUMP_DIR)
-	echo "[" >$@.tmp
-	cat $(CORPUS) | \
-	perl -n -e 'chomp; print "$$_\0";' | \
-	xargs -0 -i perl $< $(DUMP_DIR)/'scripts/{}.scr' >>$@.tmp
-	echo ' ]' >>$@.tmp
-	$(UNRELAX) <$@.tmp >$@
-	rm -f $@.tmp
+$(CA): $(DCA) $(DUMP)
+	perl $(DCA) <$(DUMP) >$@

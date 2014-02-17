@@ -53,8 +53,8 @@ The Perl scripts require the `JSON` CPAN module.
 Instructions
 ------------
 
-If the device file `PK2DeviceFile.dat` is in the directory above this project,
-you can just do
+If the device file `PK2DeviceFile.dat` is in this directory (e.g. via copying
+or symlinking), you can just do
 
 	make
 

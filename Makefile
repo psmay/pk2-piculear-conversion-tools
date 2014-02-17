@@ -2,7 +2,7 @@
 BUILD=./build
 PK2A=$(BUILD)/pk2dft-jsonhack
 PK2ASRC=./pk2dft-jsonhack.c
-DEVICEFILE=../PK2DeviceFile.dat
+DEVICEFILE=PK2DeviceFile.dat
 CA=$(BUILD)/combined-and-associated.json
 DCA=./combine-and-associate.pl
 DUMP_DIR=$(BUILD)/dump

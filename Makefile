@@ -7,6 +7,8 @@ CA=$(BUILD)/combined-and-associated.json
 DCA=./combine-and-associate.pl
 ST=$(BUILD)/script-command-table.json
 DST=./script-command-table.pl
+BA=$(BUILD)/with-simple-annotations.json
+DBA=./simple-annotate.pl
 
 # pk2dft dump
 DUMP_DIR=$(BUILD)/dump
@@ -20,7 +22,7 @@ CATARRAY=sh ./cat-array.sh
 CATOBJECT=sh ./cat-object.sh
 UNRELAX=perl ./unrelax-json.pl
 
-default: $(CA) $(ST)
+default: $(BA)
 
 $(BUILD):
 	mkdir -p $@
@@ -69,4 +71,11 @@ $(CA): $(DCA) $(DUMP)
 
 $(ST): $(DST) | $(BUILD)
 	perl $(DST) > $(ST)
+
+#
+# Add human-readable names to ops and operands; apply adjustments to clarify meanings
+#
+
+$(BA): $(DBA) $(ST) $(CA) | $(BUILD)
+	perl $(DBA) $(ST) <$(CA) >$@
 

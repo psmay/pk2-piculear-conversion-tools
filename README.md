@@ -21,7 +21,7 @@ Decoding
 
 A modified version of amx's fine `pk2dft` tool is used to unpack the distinct
 logical structures from the device file. For this project, the output
-mechanisms were modified to product valid JSON as output. (The input mechanisms
+mechanisms were modified to produce valid JSON as output. (The input mechanisms
 have *not* been changed, so this output cannot be fed back in to produce a new
 device file.)
 

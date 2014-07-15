@@ -54,7 +54,7 @@ for my $data (@{$all_data->{scripts}}) {
 				my $opname = $info->{name};
 				$result->{op} = $opname;
 				my @operands = @{$op->{operands}};
-				my %params_human = ();
+				my %params_raw = ();
 				my %params = ();
 				for my $param_info (@{$info->{params}}) {
 					my $k = $param_info->{name};
@@ -67,39 +67,39 @@ for my $data (@{$all_data->{scripts}}) {
 						$c = $c . sprintf("%02x", $_);
 					}
 					my $desc = "$c ($d)";
-					if(defined $info->{meaningOf0} and $d == 0) {
-						$d = $info->{meaningOf0};
-						$desc .= " -> $info->{$d}";
-					}
-					if($k eq 'offsetBackward') {
-						# The offset of looping ops is an unsigned, backward offset.
-						my $dest = $position - $d;
-						$result->{jumps_to} = $dest;
-						$jump_targets{$dest} //= [];
-						push @{$jump_targets{$dest}}, $position;
-					}
-					elsif($k eq 'offset') {
-						# The offset of non-loop jumps is a signed forward offset
-						# (i.e. backward if negative).
-						my $d = (0xFF & $d);
-						$d -= 0x100 if $d & 0x80;
 
+					# Apply modifications from command table
+					my $meaning_of_0 = $param_info->{meaningOf0};
+					my $unit = $param_info->{unit};
+					my $signed = $param_info->{signed};
+					my $multiply_by = $param_info->{multiplyBy};
+
+					if(defined $meaning_of_0 and $d == 0) {
+						$d = $meaning_of_0;
+					}
+					if($signed) {
+						my $base = 1 << (8 * $size);
+						my $value = $d;
+						$value &= ($base - 1);
+						$value -= $base if $value & ($base >> 1);
+						$d = $value;
+					}
+					if($param_info->{multiplyBy}) {
+						$d *= $multiply_by;
+					}
+
+					if($k eq 'offset') {
 						my $dest = $position + $d;
 						$result->{jumps_to} = $dest;
 						$jump_targets{$dest} //= [];
 						push @{$jump_targets{$dest}}, $position;
 					}
-					if($k eq 'delay') {
-						my $coeff = undef;
-						if($opname eq 'DELAY_SHORT') {
-							$coeff = 0.0213; # ms
-						} elsif($opname eq 'DELAY_LONG') {
-							$coeff = 5.46; # ms
-						}
-						if(defined $coeff) {
-							$result->{delay_ms} = $coeff * $d;
-						}
+
+					if(defined $unit) {
+						my $unit_key = "${k}_${unit}";
+						$result->{$unit_key} = $d;
 					}
+
 					if($k eq 'value') {
 						my $v = $d + 0;
 						if($opname eq 'IF_EQ_GOTO') {
@@ -112,13 +112,13 @@ for my $data (@{$all_data->{scripts}}) {
 						$result->{times} = $d + 0;
 					}
 					$params{$k} = $d + 0;
-					$params_human{$k} = $desc;
+					$params_raw{$k} = $desc;
 				}
 				if(%params) {
 					$result->{params} = \%params;
 				}
-				if(%params_human) {
-					$result->{params_human} = \%params_human;
+				if(%params_raw) {
+					$result->{params_raw} = \%params_raw;
 				}
 			}
 		}

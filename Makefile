@@ -9,6 +9,8 @@ ST=$(BUILD)/script-command-table.json
 DST=./script-command-table.pl
 BA=$(BUILD)/with-simple-annotations.json
 DBA=./simple-annotate.pl
+PC=$(BUILD)/pseudo-decompiled.c
+DPC=./pseudo-decompile.pl
 
 # pk2dft dump
 DUMP_DIR=$(BUILD)/dump
@@ -22,7 +24,7 @@ CATARRAY=sh ./cat-array.sh
 CATOBJECT=sh ./cat-object.sh
 UNRELAX=perl ./unrelax-json.pl
 
-default: $(BA)
+default: $(PC)
 
 $(BUILD):
 	mkdir -p $@
@@ -79,3 +81,9 @@ $(ST): $(DST) | $(BUILD)
 $(BA): $(DBA) $(ST) $(CA) | $(BUILD)
 	perl $(DBA) $(ST) <$(CA) >$@
 
+#
+# Convert the annotated version to a form that looks a lot like C
+#
+
+$(PC): $(DPC) $(BA)
+	perl $(DPC) <$(BA) >$@

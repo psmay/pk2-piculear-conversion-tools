@@ -38,8 +38,9 @@ for(<DATA>) {
 			if(s/[+]//) {
 				$param->{signed} = JSON::true;
 			}
-			if(s/[*](.*)//) {
-				$param->{multiplyBy} = $1;
+			if(s/[*](-?\d+(?:\.\d+)?)(.*)//) {
+				$param->{multiplyBy} = $1 + 0;
+				$param->{unit} = $2 if $2 ne '';
 			}
 
 			if(!/^$/) {
@@ -83,7 +84,7 @@ WRITE_BITS_BUFFER	0xED	bitCount
 READ_BITS_BUFFER	0xEC	bitCount			
 READ_BITS	0xEB	bitCount			
 SET_ICSP_SPEED	0xEA	clockPeriod*1000ns			
-LOOP	0xE9	offsetBackward	repeatCount%		
+LOOP	0xE9	offset*-1	repeatCount%		
 DELAY_LONG	0xE8	delay*5460000ns			
 DELAY_SHORT	0xE7	delay*21300ns			
 IF_EQ_GOTO	0xE6	value	offset+		
@@ -95,7 +96,7 @@ POKE_SFR	0xE1	sfrAddress	value
 ICDSLAVE_RX	0xE0				
 ICDSLAVE_TX_LIT	0xDF	value			
 ICDSLAVE_TX_BUF	0xDE				
-LOOPBUFFER	0xDD	offsetBackward			
+LOOPBUFFER	0xDD	offset*-1			
 ICSP_STATES_BUFFER	0xDC				
 POP_DOWNLOAD	0xDB				
 COREINST18	0xDA	inst:2

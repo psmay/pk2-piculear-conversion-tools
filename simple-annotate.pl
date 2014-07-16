@@ -103,9 +103,11 @@ for my $data (@{$all_data->{scripts}}) {
 					if($k eq 'value') {
 						my $v = $d + 0;
 						if($opname eq 'IF_EQ_GOTO') {
-							$result->{if_equals} = $v;
+							$result->{right_operand} = $v;
+							$result->{compare_op} = '==';
 						} elsif($opname eq 'IF_GT_GOTO') {
-							$result->{if_greater_than} = $v;
+							$result->{right_operand} = $v;
+							$result->{compare_op} = '>';
 						}
 					}
 					if($k eq 'repeatCount') {

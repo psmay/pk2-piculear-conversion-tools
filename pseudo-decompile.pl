@@ -36,6 +36,9 @@ print <<'EOF' ;
 // A default implementation, maybe
 #define discardBufferByte() getBufferByte()
 
+// getCompareByte() is described in the source guide as "the last byte stored in the Upload buffer".
+// It's not made explicit whether that byte is dequeued or peeked. Probably need to take a look at
+// the firmware sources.
 EOF
 
 my $indent = 1;
@@ -101,6 +104,10 @@ for my $data (@{$all_data->{scripts}}) {
 						say ind . "for(loopbi = getBufferWord()$xadj; loopbi > 0; loopbi--) {";
 						++$indent;
 					}
+					elsif ($op =~ /^IF_(?:EQ|GT)_GOTO$/ && $_->{jumps_to} > $_->{position}) {
+						--$indent;
+						say ind . "}";
+					}
 				}
 			}
 		}
@@ -131,6 +138,11 @@ for my $data (@{$all_data->{scripts}}) {
 			} else {
 				say ind . "goto $jlbl;";
 			}
+		} elsif ($op =~ /^IF_(?:EQ|GT)_GOTO$/ && $jumps_to > $position) {
+			my $right_operand = sprintf('0x%02x', $script_step->{right_operand});
+			my $compare_op = $script_step->{compare_op};
+			say ind . "if (getCompareByte() $compare_op $right_operand) {";
+			++$indent;
 		} elsif ($op eq 'LOOPBUFFER') {
 			#say ind . "LOOP_VIA(loopb, $position, getBufferWord(), $jlbl);";
 			$indent--;
@@ -159,6 +171,8 @@ for my $data (@{$all_data->{scripts}}) {
 			say ind . "delay_ns($ns); // $human";
 		} elsif ($op eq 'POP_DOWNLOAD') {
 			say ind . "discardBufferByte();";
+		} elsif ($op eq 'EXIT_SCRIPT') {
+			say ind . "return;";
 		} elsif ($op eq 'SET_ICSP_PINS') {
 			my $value = $params{pinStates};
 			my $pgd_value = ($value & 0x08) ? "true" : "false";
